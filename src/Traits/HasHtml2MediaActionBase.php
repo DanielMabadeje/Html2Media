@@ -63,7 +63,7 @@ trait HasHtml2MediaActionBase
         return [$options];
     }
 
-    protected function shouldOpenModal(): bool
+    public function shouldOpenModal(): bool
     {
         return false; // adjust if you want modal support later
     }
