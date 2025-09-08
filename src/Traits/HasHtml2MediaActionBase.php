@@ -2,6 +2,7 @@
 
 namespace Torgodly\Html2Media\Traits;
 
+use Closure;
 use Filament\Actions\MountableAction;
 
 trait HasHtml2MediaActionBase
@@ -63,7 +64,7 @@ trait HasHtml2MediaActionBase
         return [$options];
     }
 
-    public function shouldOpenModal(): bool
+    public function shouldOpenModal(Closure $checkForSchemaUsing = null): bool
     {
         return false; // adjust if you want modal support later
     }
