@@ -4,36 +4,30 @@ namespace Torgodly\Html2Media\Traits;
 
 use Closure;
 use Filament\Actions\Action;
+use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Contracts\View\View;
 
 trait HasHtml2MediaActionBase
 {
+    protected View|Htmlable|Closure|null $content = null;
+
     protected bool $isPrint = false;
     protected bool $isSavePdf = false;
     protected bool $isPreview = false;
 
-    /*
-    |--------------------------------------------------------------------------
-    | State getters
-    |--------------------------------------------------------------------------
-    */
-    public function isPrint(): bool
-    {
-        return $this->isPrint;
-    }
-
-    public function isSavePdf(): bool
-    {
-        return $this->isSavePdf;
-    }
-
-    public function isPreview(): bool
-    {
-        return $this->isPreview;
-    }
+    protected string|Closure $filename = 'document.pdf';
+    protected array|Closure $pagebreak = ['mode' => ['css', 'legacy'], 'after' => 'section'];
+    protected string|Closure $orientation = 'portrait';
+    protected string|array|Closure $format = 'a4';
+    protected string|Closure $unit = 'mm';
+    protected int|Closure $scale = 2;
+    protected int|Closure|array $margin = 0;
+    protected bool|Closure $enableLinks = false;
+    protected null|string|Closure $elementId = null;
 
     /*
     |--------------------------------------------------------------------------
-    | Fluent setters
+    | Enable / Disable toggles
     |--------------------------------------------------------------------------
     */
     public function enablePrint(bool $condition = true): static
@@ -57,9 +51,146 @@ trait HasHtml2MediaActionBase
         return $this;
     }
 
+    public function isPrint(): bool
+    {
+        return $this->isPrint;
+    }
+
+    public function isSavePdf(): bool
+    {
+        return $this->isSavePdf;
+    }
+
+    public function isPreview(): bool
+    {
+        return $this->isPreview;
+    }
+
     /*
     |--------------------------------------------------------------------------
-    | Core setup
+    | Config builders
+    |--------------------------------------------------------------------------
+    */
+    public function filename(string|Closure $filename = 'document.pdf'): static
+    {
+        $this->filename = $filename;
+
+        return $this;
+    }
+
+    public function getFilename(): string
+    {
+        $filename = $this->evaluate($this->filename);
+        $baseName = pathinfo($filename, PATHINFO_FILENAME);
+
+        return $baseName . '.pdf';
+    }
+
+    public function pagebreak(string|Closure|null $after = 'section', array|Closure|null $mode = ['css', 'legacy']): static
+    {
+        $this->pagebreak = ['mode' => $mode, 'after' => $after];
+
+        return $this;
+    }
+
+    public function getPageBreak(): array
+    {
+        return $this->evaluate($this->pagebreak);
+    }
+
+    public function orientation(string|Closure|null $orientation = 'portrait'): static
+    {
+        $this->orientation = $orientation;
+
+        return $this;
+    }
+
+    public function getOrientation(): string
+    {
+        return $this->evaluate($this->orientation);
+    }
+
+    public function format(string|array|Closure|null $format = 'a4', string|Closure|null $unit = 'mm'): static
+    {
+        $this->format = $format;
+        $this->unit = $unit;
+
+        return $this;
+    }
+
+    public function getFormat(): string|array
+    {
+        return $this->evaluate($this->format);
+    }
+
+    public function getUnit(): string
+    {
+        return $this->evaluate($this->unit);
+    }
+
+    public function scale(int|Closure|null $scale = 2): static
+    {
+        $this->scale = $scale;
+
+        return $this;
+    }
+
+    public function getScale(): int
+    {
+        return $this->evaluate($this->scale);
+    }
+
+    public function margin(int|Closure|array|null $margin = 0): static
+    {
+        $this->margin = $margin;
+
+        return $this;
+    }
+
+    public function getMargin(): int|array
+    {
+        return $this->evaluate($this->margin);
+    }
+
+    public function enableLinks(bool|Closure $enableLinks = true): static
+    {
+        $this->enableLinks = $enableLinks;
+
+        return $this;
+    }
+
+    public function isEnableLinks(): bool
+    {
+        return $this->evaluate($this->enableLinks);
+    }
+
+    public function content(View|Htmlable|Closure|null $content = null): static
+    {
+        $this->content = $content;
+
+        return $this;
+    }
+
+    public function getContent(): ?Htmlable
+    {
+        return $this->evaluate($this->content);
+    }
+
+    public function elementId(string|Closure $elementId = null): static
+    {
+        $this->elementId = $elementId;
+
+        return $this;
+    }
+
+    public function getElementId(): string
+    {
+        return $this->evaluate($this->elementId) ?? uniqid('html2media-');
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Filament Setup
     |--------------------------------------------------------------------------
     */
     public function setUp(): void
@@ -81,19 +212,27 @@ trait HasHtml2MediaActionBase
 
     protected function getDispatchOptions(?string $type = null): array
     {
-        $options = [
-            'elementId' => $this->getElementId(),
-        ];
-
-        if ($type) {
-            $options['type'] = $type;
-        }
-
-        return [$options];
+        return [[
+            'type' => $type ?? ($this->isSavePdf ? 'savePdf' : ($this->isPrint ? 'print' : null)),
+            'element' => $this->getElementId(),
+            'filename' => $this->getFilename(),
+            'pagebreak' => $this->getPageBreak(),
+            'jsPDF' => [
+                'orientation' => $this->getOrientation(),
+                'format' => $this->getFormat(),
+                'unit' => $this->getUnit(),
+            ],
+            'html2canvas' => [
+                'scale' => $this->getScale(),
+                'useCORS' => true,
+            ],
+            'margin' => $this->getMargin(),
+            'enableLinks' => $this->isEnableLinks(),
+        ]];
     }
 
     public function shouldOpenModal(?Closure $checkForSchemaUsing = null): bool
     {
-        return false; // keep disabled until modal schema support is added
+        return false;
     }
 }
