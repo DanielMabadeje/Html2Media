@@ -1,15 +1,26 @@
 document.addEventListener('DOMContentLoaded', function () {
     Livewire.on('triggerPrint', function (options = {}) {
-        console.log('triggerPrint', options);
-
-        performAction(options);
+        console.log('triggerPrint received:', JSON.stringify(options, null, 2));
+        performAction(options[0]); // Access first item of array
     });
 });
 
-function performAction({ action = 'print', element, ...customOptions } = {}) {
+function performAction({ type = 'print', element, ...customOptions } = {}) {
+    const action = type;
     const printElement = document.getElementById(`print-smart-content-${element}`);
+    if (!printElement) {
+        console.error(`Element with ID "print-smart-content-${element}" not found.`);
+        return;
+    }
 
-    // Default options for html2pdf
+    let iframe = document.getElementById(`print-smart-iframe-${element}`);
+    if (!iframe) {
+        iframe = document.createElement('iframe');
+        iframe.id = `print-smart-iframe-${element}`;
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+    }
+
     const defaultOptions = {
         filename: 'document.pdf',
         pagebreak: {
@@ -29,69 +40,38 @@ function performAction({ action = 'print', element, ...customOptions } = {}) {
         margin: 0
     };
 
-    // Merge custom options with defaults
     const options = {
         ...defaultOptions,
         ...customOptions,
-        pagebreak: {
-            ...defaultOptions.pagebreak,
-            ...(customOptions.pagebreak || {})
-        },
-        jsPDF: {
-            ...defaultOptions.jsPDF,
-            ...(customOptions.jsPDF || {})
-        },
-        html2canvas: {
-            ...defaultOptions.html2canvas,
-            ...(customOptions.html2canvas || {})
-        }
+        pagebreak: { ...defaultOptions.pagebreak, ...(customOptions.pagebreak || {}) },
+        jsPDF: { ...defaultOptions.jsPDF, ...(customOptions.jsPDF || {}) },
+        html2canvas: { ...defaultOptions.html2canvas, ...(customOptions.html2canvas || {}) }
     };
 
-    if (printElement) {
+    try {
         switch (action) {
             case 'savePdf':
-                // Save as PDF
-                html2pdf()
-                    .from(printElement)
-                    .set(options)
-                    .save();
+                html2pdf().from(printElement).set(options).save();
                 break;
             case 'print':
-                // Print action
-                html2pdf()
-                    .from(printElement)
-                    .set(options)
-                    .toPdf()
-                    .get('pdf')
-                    .then(function (pdf) {
-                        const blob = pdf.output('blob');
-                        const url = URL.createObjectURL(blob);
-                        const iframe = document.getElementById(`print-smart-iframe-${element}`);
-                        iframe.src = url;
-
-                        iframe.onload = function () {
-                            iframe.contentWindow.focus();
-                            iframe.contentWindow.print();
-                            iframe.contentWindow.onafterprint = function () {
-                                URL.revokeObjectURL(url);
-                            };
+                html2pdf().from(printElement).set(options).toPdf().get('pdf').then(function (pdf) {
+                    const blob = pdf.output('blob');
+                    const url = URL.createObjectURL(blob);
+                    iframe.src = url;
+                    iframe.onload = function () {
+                        iframe.contentWindow.focus();
+                        iframe.contentWindow.print();
+                        iframe.contentWindow.onafterprint = function () {
+                            URL.revokeObjectURL(url);
+                            iframe.remove();
                         };
-                    });
+                    };
+                });
                 break;
             default:
                 console.error('Unsupported action:', action);
         }
-    } else {
-        console.error(`Element with ID "print-smart-content-${element}" not found.`);
+    } catch (error) {
+        console.error('Error performing action:', error);
     }
-}
-
-function replaceSpacesInTextNodes(element) {
-    element.childNodes.forEach(node => {
-        if (node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== '') {
-            node.textContent = node.textContent.replace(/\s/g, "\u00a0");
-        } else if (node.nodeType === Node.ELEMENT_NODE) {
-            replaceSpacesInTextNodes(node);
-        }
-    });
 }

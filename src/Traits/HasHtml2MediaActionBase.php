@@ -296,13 +296,46 @@ trait HasHtml2MediaActionBase
         return $actions;
     }
 
+    // protected function getDispatchOptions(?string $type = null): array
+    // {
+    //     $elementId = $this->getElementId();
+
+    //     $options = [[
+    //         'type' => $type ?? ($this->isSavePdf() ? 'savePdf' : ($this->isPrint() ? 'print' : null)),
+    //         'element' => $elementId,
+    //         'filename' => $this->getFilename(),
+    //         'pagebreak' => $this->getPageBreak(),
+    //         'jsPDF' => [
+    //             'orientation' => $this->getOrientation(),
+    //             'format' => $this->getFormat(),
+    //             'unit' => $this->getUnit(),
+    //         ],
+    //         'html2canvas' => [
+    //             'scale' => $this->getScale(),
+    //             'useCORS' => true,
+    //             'allowTaint' => false,
+    //             'letterRendering' => true,
+    //         ],
+    //         'margin' => $this->getMargin(),
+    //         'enableLinks' => $this->isEnableLinks(),
+    //     ]];
+
+    //     if (app()->hasDebugModeEnabled()) {
+    //         logger()->info('Html2Media Dispatch Options', [
+    //             'element_id' => $elementId,
+    //             'options' => $options
+    //         ]);
+    //     }
+
+    //     return $options;
+    // }
+
     protected function getDispatchOptions(?string $type = null): array
     {
-        $elementId = $this->getElementId();
-        
+        $elementId = $this->getElementId(); // e.g., print-smart-content-123
         $options = [[
-            'type' => $type ?? ($this->isSavePdf() ? 'savePdf' : ($this->isPrint() ? 'print' : null)),
-            'element' => $elementId,
+            'action' => $type ?? ($this->isSavePdf() ? 'savePdf' : ($this->isPrint() ? 'print' : null)),
+            'element' => str_replace('print-smart-content-', '', $elementId), // Extract record ID or uniqid
             'filename' => $this->getFilename(),
             'pagebreak' => $this->getPageBreak(),
             'jsPDF' => [
@@ -319,14 +352,12 @@ trait HasHtml2MediaActionBase
             'margin' => $this->getMargin(),
             'enableLinks' => $this->isEnableLinks(),
         ]];
-
         if (app()->hasDebugModeEnabled()) {
             logger()->info('Html2Media Dispatch Options', [
                 'element_id' => $elementId,
                 'options' => $options
             ]);
         }
-
         return $options;
     }
 
