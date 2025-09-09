@@ -7,7 +7,7 @@ use Filament\Actions\Action;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Contracts\View\View;
 
-trait HasHtml2MediaActionBase
+trait HasHtml2MediaActionBaseCheck
 {
     protected View|Htmlable|Closure|null $content = null;
 
@@ -24,8 +24,6 @@ trait HasHtml2MediaActionBase
     protected int|Closure|array $margin = 0;
     protected bool|Closure $enableLinks = false;
     protected null|string|Closure $elementId = null;
-
-    // 🔑 cache for resolved element ID
     protected ?string $resolvedElementId = null;
 
     /*
@@ -174,6 +172,19 @@ trait HasHtml2MediaActionBase
         return $this;
     }
 
+    // public function getContent(): ?Htmlable
+    // {
+    //     // return $this->evaluate($this->content);
+    //     $content = $this->evaluate($this->content);
+
+    //     if ($content) {
+    //         return new Htmlable(
+    //             '<div id="' . e($this->getElementId()) . '">' . $content->toHtml() . '</div>'
+    //         );
+    //     }
+
+    //     return null;
+    // }
     public function getContent(): ?Htmlable
     {
         $content = $this->evaluate($this->content);
@@ -203,17 +214,21 @@ trait HasHtml2MediaActionBase
     }
 
     public function getElementId(): string
-    {
-        if ($this->resolvedElementId) {
-            return $this->resolvedElementId;
-        }
-
-        $evaluated = $this->evaluate($this->elementId);
-
-        $this->resolvedElementId = $evaluated ?: 'html2media-' . uniqid();
-
+{
+    if ($this->resolvedElementId) {
         return $this->resolvedElementId;
     }
+
+    $evaluated = $this->evaluate($this->elementId);
+
+    if ($evaluated) {
+        $this->resolvedElementId = $evaluated;
+    } else {
+        $this->resolvedElementId = 'html2media-' . uniqid();
+    }
+
+    return $this->resolvedElementId;
+}
 
     /*
     |--------------------------------------------------------------------------
