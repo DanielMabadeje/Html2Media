@@ -217,35 +217,54 @@ trait HasHtml2MediaActionBase
     | Filament Setup
     |--------------------------------------------------------------------------
     */
+    // public function setUp(): void
+    // {
+    //     parent::setUp();
+
+    //     $this->modalHeading(fn(): string => $this->getLabel());
+    //     $this->modalSubmitAction(false);
+
+    //     // FIXED: Only dispatch when modal is actually shown and content is rendered
+    //     $this->action(function (Action $action) {
+    //         if (!$this->shouldOpenModal()) {
+    //             // For non-modal actions, dispatch immediately
+    //             $action->getLivewire()->dispatch(
+    //                 'triggerPrint',
+    //                 ...$this->getDispatchOptions()
+    //             );
+    //         }
+    //     });
+
+    //     // FIXED: Add modal content with proper element ID
+    //     $this->modalContent(function () {
+    //         return $this->getContent();
+    //     });
+
+    //     // FIXED: Add modal footer actions for print/save when modal is used
+    //     if ($this->shouldOpenModal()) {
+    //         $this->modalFooterActions($this->getModalFooterActions());
+    //     }
+    // }
+
     public function setUp(): void
-    {
-        parent::setUp();
-
-        $this->modalHeading(fn(): string => $this->getLabel());
-        $this->modalSubmitAction(false);
-
-        // FIXED: Only dispatch when modal is actually shown and content is rendered
+{
+    parent::setUp();
+    $this->modalHeading(fn(): string => $this->getLabel());
+    $this->modalSubmitAction(false);
+    $this->modalContent(function () {
+        return $this->getContent();
+    });
+    if ($this->shouldOpenModal()) {
+        $this->modalFooterActions($this->getModalFooterActions());
         $this->action(function (Action $action) {
-            if (!$this->shouldOpenModal()) {
-                // For non-modal actions, dispatch immediately
-                $action->getLivewire()->dispatch(
-                    'triggerPrint',
-                    ...$this->getDispatchOptions()
-                );
+            $options = $this->getDispatchOptions();
+            $action->getLivewire()->dispatch('triggerPrint', ...$options);
+            if (app()->hasDebugModeEnabled()) {
+                logger()->info('Modal action triggered', ['options' => $options]);
             }
         });
-
-        // FIXED: Add modal content with proper element ID
-        $this->modalContent(function () {
-            return $this->getContent();
-        });
-
-        // FIXED: Add modal footer actions for print/save when modal is used
-        if ($this->shouldOpenModal()) {
-            $this->modalFooterActions($this->getModalFooterActions());
-        }
     }
-
+}
     /**
      * FIXED: Generate modal footer actions
      */
