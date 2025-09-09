@@ -267,25 +267,7 @@ trait HasHtml2MediaActionBase
     //     }
     // }
 
-    public function setUp(): void
-{
-    parent::setUp();
-    $this->modalHeading(fn(): string => $this->getLabel());
-    $this->modalSubmitAction(false);
-    $this->modalContent(function () {
-        return $this->getContent();
-    });
-    if ($this->shouldOpenModal()) {
-        $this->modalFooterActions($this->getModalFooterActions());
-        $this->action(function (Action $action) {
-            $options = $this->getDispatchOptions();
-            $action->getLivewire()->dispatch('triggerPrint', ...$options);
-            if (app()->hasDebugModeEnabled()) {
-                logger()->info('Modal action triggered', ['options' => $options]);
-            }
-        });
-    }
-}
+ 
     /**
      * FIXED: Generate modal footer actions
      */
@@ -312,9 +294,9 @@ trait HasHtml2MediaActionBase
     ->action(function (Action $action) {
         $options = $this->getDispatchOptions('print');
         $action->getLivewire()->dispatch('triggerPrint', ...$options);
-        if (app()->hasDebugModeEnabled()) {
+        // if (app()->hasDebugModeEnabled()) {
             logger()->info('Print action dispatched', ['options' => $options]);
-        }
+        // }
         $action->getLivewire()->mountAction(null); // Close modal after dispatch
     });
         }
