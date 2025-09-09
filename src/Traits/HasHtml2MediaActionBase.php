@@ -25,7 +25,7 @@ trait HasHtml2MediaActionBase
     protected bool|Closure $enableLinks = false;
     protected null|string|Closure $elementId = null;
 
-    // 🔑 cache for resolved element ID
+    // 🔑 Cache for resolved element ID
     protected ?string $resolvedElementId = null;
 
     /*
@@ -36,21 +36,18 @@ trait HasHtml2MediaActionBase
     public function enablePrint(bool $condition = true): static
     {
         $this->isPrint = $condition;
-
         return $this;
     }
 
     public function enableSavePdf(bool $condition = true): static
     {
         $this->isSavePdf = $condition;
-
         return $this;
     }
 
     public function enablePreview(bool $condition = true): static
     {
         $this->isPreview = $condition;
-
         return $this;
     }
 
@@ -77,7 +74,6 @@ trait HasHtml2MediaActionBase
     public function filename(string|Closure $filename = 'document.pdf'): static
     {
         $this->filename = $filename;
-
         return $this;
     }
 
@@ -85,14 +81,12 @@ trait HasHtml2MediaActionBase
     {
         $filename = $this->evaluate($this->filename);
         $baseName = pathinfo($filename, PATHINFO_FILENAME);
-
         return $baseName . '.pdf';
     }
 
     public function pagebreak(string|Closure|null $after = 'section', array|Closure|null $mode = ['css', 'legacy']): static
     {
         $this->pagebreak = ['mode' => $mode, 'after' => $after];
-
         return $this;
     }
 
@@ -104,7 +98,6 @@ trait HasHtml2MediaActionBase
     public function orientation(string|Closure|null $orientation = 'portrait'): static
     {
         $this->orientation = $orientation;
-
         return $this;
     }
 
@@ -117,7 +110,6 @@ trait HasHtml2MediaActionBase
     {
         $this->format = $format;
         $this->unit = $unit;
-
         return $this;
     }
 
@@ -134,7 +126,6 @@ trait HasHtml2MediaActionBase
     public function scale(int|Closure|null $scale = 2): static
     {
         $this->scale = $scale;
-
         return $this;
     }
 
@@ -146,7 +137,6 @@ trait HasHtml2MediaActionBase
     public function margin(int|Closure|array|null $margin = 0): static
     {
         $this->margin = $margin;
-
         return $this;
     }
 
@@ -158,7 +148,6 @@ trait HasHtml2MediaActionBase
     public function enableLinks(bool|Closure $enableLinks = true): static
     {
         $this->enableLinks = $enableLinks;
-
         return $this;
     }
 
@@ -170,7 +159,6 @@ trait HasHtml2MediaActionBase
     public function content(View|Htmlable|Closure|null $content = null): static
     {
         $this->content = $content;
-
         return $this;
     }
 
@@ -178,7 +166,7 @@ trait HasHtml2MediaActionBase
     {
         $content = $this->evaluate($this->content);
 
-        if (! $content) {
+        if (!$content) {
             return null;
         }
 
@@ -198,18 +186,27 @@ trait HasHtml2MediaActionBase
     public function elementId(string|Closure $elementId = null): static
     {
         $this->elementId = $elementId;
-
+        // Reset cached value when element ID is changed
+        $this->resolvedElementId = null;
         return $this;
     }
 
+    /**
+     * FIXED: This method now properly handles record context and caching
+     */
     public function getElementId(): string
     {
+        // Always re-evaluate for dynamic contexts (like table actions with records)
+        if ($this->elementId instanceof Closure) {
+            return $this->evaluate($this->elementId) ?: 'html2media-' . uniqid();
+        }
+
+        // Use cached value for static element IDs
         if ($this->resolvedElementId) {
             return $this->resolvedElementId;
         }
 
         $evaluated = $this->evaluate($this->elementId);
-
         $this->resolvedElementId = $evaluated ?: 'html2media-' . uniqid();
 
         return $this->resolvedElementId;
@@ -227,21 +224,85 @@ trait HasHtml2MediaActionBase
         $this->modalHeading(fn(): string => $this->getLabel());
         $this->modalSubmitAction(false);
 
+        // FIXED: Only dispatch when modal is actually shown and content is rendered
         $this->action(function (Action $action) {
-            if (! $this->shouldOpenModal()) {
+            if (!$this->shouldOpenModal()) {
+                // For non-modal actions, dispatch immediately
                 $action->getLivewire()->dispatch(
                     'triggerPrint',
                     ...$this->getDispatchOptions()
                 );
             }
         });
+
+        // FIXED: Add modal content with proper element ID
+        $this->modalContent(function () {
+            return $this->getContent();
+        });
+
+        // FIXED: Add modal footer actions for print/save when modal is used
+        if ($this->shouldOpenModal()) {
+            $this->modalFooterActions($this->getModalFooterActions());
+        }
+    }
+
+    /**
+     * FIXED: Generate modal footer actions
+     */
+    protected function getModalFooterActions(): array
+    {
+        $actions = [];
+
+        if ($this->isPrint()) {
+            $actions[] = \Filament\Actions\Action::make('modal_print')
+                ->label('Print')
+                ->icon('heroicon-o-printer')
+                ->action(function (Action $action) {
+                    $action->getLivewire()->dispatch(
+                        'triggerPrint',
+                        ...$this->getDispatchOptions('print')
+                    );
+                    // Close modal after dispatching
+                    $action->getLivewire()->mountAction(null);
+                });
+        }
+
+        if ($this->isSavePdf()) {
+            $actions[] = \Filament\Actions\Action::make('modal_save_pdf')
+                ->label('Save as PDF')
+                ->icon('heroicon-o-document-arrow-down')
+                ->action(function (Action $action) {
+                    $action->getLivewire()->dispatch(
+                        'triggerPrint',
+                        ...$this->getDispatchOptions('savePdf')
+                    );
+                    // Close modal after dispatching
+                    $action->getLivewire()->mountAction(null);
+                });
+        }
+
+        if ($this->isPreview()) {
+            $actions[] = \Filament\Actions\Action::make('modal_preview')
+                ->label('Preview')
+                ->icon('heroicon-o-eye')
+                ->action(function (Action $action) {
+                    $action->getLivewire()->dispatch(
+                        'triggerPrint',
+                        ...$this->getDispatchOptions('preview')
+                    );
+                });
+        }
+
+        return $actions;
     }
 
     protected function getDispatchOptions(?string $type = null): array
     {
+        $elementId = $this->getElementId();
+        
         $options = [[
-            'type' => $type ?? ($this->isSavePdf ? 'savePdf' : ($this->isPrint ? 'print' : null)),
-            'element' => $this->getElementId(),
+            'type' => $type ?? ($this->isSavePdf() ? 'savePdf' : ($this->isPrint() ? 'print' : null)),
+            'element' => $elementId,
             'filename' => $this->getFilename(),
             'pagebreak' => $this->getPageBreak(),
             'jsPDF' => [
@@ -252,18 +313,39 @@ trait HasHtml2MediaActionBase
             'html2canvas' => [
                 'scale' => $this->getScale(),
                 'useCORS' => true,
+                'allowTaint' => false,
+                'letterRendering' => true,
             ],
             'margin' => $this->getMargin(),
             'enableLinks' => $this->isEnableLinks(),
         ]];
 
-        logger()->info('Html2Media Dispatch Options', $options);
+        if (app()->hasDebugModeEnabled()) {
+            logger()->info('Html2Media Dispatch Options', [
+                'element_id' => $elementId,
+                'options' => $options
+            ]);
+        }
 
         return $options;
     }
 
+    /**
+     * FIXED: Only open modal when preview is enabled or explicitly needed
+     */
     public function shouldOpenModal(?Closure $checkForSchemaUsing = null): bool
     {
-        return false;
+        // Open modal if preview is enabled, or if requiresConfirmation is set
+        return $this->isPreview() || $this->shouldConfirm();
+    }
+
+    /**
+     * Check if the action requires confirmation
+     */
+    protected function shouldConfirm(): bool
+    {
+        // This method should be overridden in child classes if needed
+        // or check if requiresConfirmation() was called
+        return property_exists($this, 'requiresConfirmation') && $this->requiresConfirmation === true;
     }
 }
