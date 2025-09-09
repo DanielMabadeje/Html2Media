@@ -24,6 +24,7 @@ trait HasHtml2MediaActionBase
     protected int|Closure|array $margin = 0;
     protected bool|Closure $enableLinks = false;
     protected null|string|Closure $elementId = null;
+    protected ?string $resolvedElementId = null;
 
     /*
     |--------------------------------------------------------------------------
@@ -171,9 +172,38 @@ trait HasHtml2MediaActionBase
         return $this;
     }
 
+    // public function getContent(): ?Htmlable
+    // {
+    //     // return $this->evaluate($this->content);
+    //     $content = $this->evaluate($this->content);
+
+    //     if ($content) {
+    //         return new Htmlable(
+    //             '<div id="' . e($this->getElementId()) . '">' . $content->toHtml() . '</div>'
+    //         );
+    //     }
+
+    //     return null;
+    // }
     public function getContent(): ?Htmlable
     {
-        return $this->evaluate($this->content);
+        $content = $this->evaluate($this->content);
+
+        if (! $content) {
+            return null;
+        }
+
+        if ($content instanceof Htmlable) {
+            $html = $content->toHtml();
+        } elseif ($content instanceof View) {
+            $html = $content->render();
+        } else {
+            $html = (string) $content;
+        }
+
+        return new \Illuminate\Support\HtmlString(
+            '<div id="' . e($this->getElementId()) . '">' . $html . '</div>'
+        );
     }
 
     public function elementId(string|Closure $elementId = null): static
@@ -184,9 +214,21 @@ trait HasHtml2MediaActionBase
     }
 
     public function getElementId(): string
-    {
-        return $this->evaluate($this->elementId) ?? uniqid('html2media-');
+{
+    if ($this->resolvedElementId) {
+        return $this->resolvedElementId;
     }
+
+    $evaluated = $this->evaluate($this->elementId);
+
+    if ($evaluated) {
+        $this->resolvedElementId = $evaluated;
+    } else {
+        $this->resolvedElementId = 'html2media-' . uniqid();
+    }
+
+    return $this->resolvedElementId;
+}
 
     /*
     |--------------------------------------------------------------------------

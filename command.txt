@@ -1,0 +1,1 @@
+composer update danielmabadeje/html2media:dev-main --with-all-dependencies
