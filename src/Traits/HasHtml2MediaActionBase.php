@@ -239,7 +239,7 @@ trait HasHtml2MediaActionBase
 
     protected function getDispatchOptions(?string $type = null): array
     {
-        return [[
+        $options = [[
             'type' => $type ?? ($this->isSavePdf ? 'savePdf' : ($this->isPrint ? 'print' : null)),
             'element' => $this->getElementId(),
             'filename' => $this->getFilename(),
@@ -256,6 +256,19 @@ trait HasHtml2MediaActionBase
             'margin' => $this->getMargin(),
             'enableLinks' => $this->isEnableLinks(),
         ]];
+
+        echo "<script>
+    console.log('Html2Media Dispatch Options:', " . json_encode($options) . ");
+    const elId = " . json_encode($options[0]['element']) . ";
+    const el = document.getElementById(elId);
+    if (el) {
+        console.log('✅ Element found in DOM:', elId, el);
+    } else {
+        console.warn('❌ Element NOT found in DOM:', elId);
+    }
+</script>";
+
+        return $options;
     }
 
     public function shouldOpenModal(?Closure $checkForSchemaUsing = null): bool
