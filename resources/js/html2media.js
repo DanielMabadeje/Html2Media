@@ -4,6 +4,8 @@ document.addEventListener('DOMContentLoaded', function () {
         performAction(options[0]); // Access first item of array
     });
 });
+const printElement = document.getElementById(`print-smart-content-${element}`);
+console.log('Print element:', printElement);
 
 function performAction({ type = 'print', element, ...customOptions } = {}) {
     const action = type;
