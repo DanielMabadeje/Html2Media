@@ -162,26 +162,47 @@ trait HasHtml2MediaActionBase
         return $this;
     }
 
+    // public function getContent(): ?Htmlable
+    // {
+    //     $content = $this->evaluate($this->content);
+
+    //     if (!$content) {
+    //         return null;
+    //     }
+
+    //     if ($content instanceof Htmlable) {
+    //         $html = $content->toHtml();
+    //     } elseif ($content instanceof View) {
+    //         $html = $content->render();
+    //     } else {
+    //         $html = (string) $content;
+    //     }
+
+    //     return new \Illuminate\Support\HtmlString(
+    //         '<div id="' . e($this->getElementId()) . '">' . $html . '</div>'
+    //     );
+    // }
     public function getContent(): ?Htmlable
-    {
-        $content = $this->evaluate($this->content);
-
-        if (!$content) {
-            return null;
-        }
-
-        if ($content instanceof Htmlable) {
-            $html = $content->toHtml();
-        } elseif ($content instanceof View) {
-            $html = $content->render();
-        } else {
-            $html = (string) $content;
-        }
-
-        return new \Illuminate\Support\HtmlString(
-            '<div id="' . e($this->getElementId()) . '">' . $html . '</div>'
-        );
+{
+    $content = $this->evaluate($this->content);
+    if (!$content) {
+        return null;
     }
+    if ($content instanceof Htmlable) {
+        $html = $content->toHtml();
+    } elseif ($content instanceof View) {
+        $html = $content->render();
+    } else {
+        $html = (string) $content;
+    }
+    $elementId = $this->getElementId();
+    if (app()->hasDebugModeEnabled()) {
+        logger()->info('Rendering content with ID', ['element_id' => $elementId]);
+    }
+    return new \Illuminate\Support\HtmlString(
+        '<div id="' . e($elementId) . '" class="w-full max-w-none">' . $html . '</div>'
+    );
+}
 
     public function elementId(string|Closure $elementId = null): static
     {
@@ -273,17 +294,29 @@ trait HasHtml2MediaActionBase
         $actions = [];
 
         if ($this->isPrint()) {
+            // $actions[] = \Filament\Actions\Action::make('modal_print')
+            //     ->label('Print')
+            //     ->icon('heroicon-o-printer')
+            //     ->action(function (Action $action) {
+            //         $action->getLivewire()->dispatch(
+            //             'triggerPrint',
+            //             ...$this->getDispatchOptions('print')
+            //         );
+            //         // Close modal after dispatching
+            //         $action->getLivewire()->mountAction(null);
+            //     });
+
             $actions[] = \Filament\Actions\Action::make('modal_print')
-                ->label('Print')
-                ->icon('heroicon-o-printer')
-                ->action(function (Action $action) {
-                    $action->getLivewire()->dispatch(
-                        'triggerPrint',
-                        ...$this->getDispatchOptions('print')
-                    );
-                    // Close modal after dispatching
-                    $action->getLivewire()->mountAction(null);
-                });
+    ->label('Print')
+    ->icon('heroicon-o-printer')
+    ->action(function (Action $action) {
+        $options = $this->getDispatchOptions('print');
+        $action->getLivewire()->dispatch('triggerPrint', ...$options);
+        if (app()->hasDebugModeEnabled()) {
+            logger()->info('Print action dispatched', ['options' => $options]);
+        }
+        $action->getLivewire()->mountAction(null); // Close modal after dispatch
+    });
         }
 
         if ($this->isSavePdf()) {
@@ -295,6 +328,9 @@ trait HasHtml2MediaActionBase
                         'triggerPrint',
                         ...$this->getDispatchOptions('savePdf')
                     );
+                    if (app()->hasDebugModeEnabled()) {
+            logger()->info('Print action dispatched', ['options' => $options]);
+        }
                     // Close modal after dispatching
                     $action->getLivewire()->mountAction(null);
                 });

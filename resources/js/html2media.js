@@ -1,14 +1,16 @@
 document.addEventListener('DOMContentLoaded', function () {
-    Livewire.on('triggerPrint', function (options = {}) {
+    console.log('html2media.js loaded');
+    Livewire.on('triggerPrint', function (options = []) {
         console.log('triggerPrint received:', JSON.stringify(options, null, 2));
-        performAction(options[0]); // Access first item of array
+        if (options.length > 0) {
+            performAction(options[0]);
+        } else {
+            console.error('No options provided for triggerPrint');
+        }
     });
 });
-const printElement = document.getElementById(`print-smart-content-${element}`);
-console.log('Print element:', printElement);
 
 function performAction({ type = 'print', element, ...customOptions } = {}) {
-    const action = type;
     const printElement = document.getElementById(`print-smart-content-${element}`);
     if (!printElement) {
         console.error(`Element with ID "print-smart-content-${element}" not found.`);
@@ -25,20 +27,9 @@ function performAction({ type = 'print', element, ...customOptions } = {}) {
 
     const defaultOptions = {
         filename: 'document.pdf',
-        pagebreak: {
-            mode: ['css', 'legacy'],
-            after: 'section'
-        },
-        jsPDF: {
-            unit: 'mm',
-            format: 'a4',
-            orientation: 'portrait'
-        },
-        html2canvas: {
-            scale: 2,
-            useCORS: true,
-            logging: true
-        },
+        pagebreak: { mode: ['css', 'legacy'], after: 'section' },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        html2canvas: { scale: 2, useCORS: true, logging: true },
         margin: 0
     };
 
@@ -51,7 +42,7 @@ function performAction({ type = 'print', element, ...customOptions } = {}) {
     };
 
     try {
-        switch (action) {
+        switch (type) {
             case 'savePdf':
                 html2pdf().from(printElement).set(options).save();
                 break;
@@ -71,7 +62,7 @@ function performAction({ type = 'print', element, ...customOptions } = {}) {
                 });
                 break;
             default:
-                console.error('Unsupported action:', action);
+                console.error('Unsupported action:', type);
         }
     } catch (error) {
         console.error('Error performing action:', error);
