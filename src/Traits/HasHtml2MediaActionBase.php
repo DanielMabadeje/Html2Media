@@ -238,6 +238,19 @@ trait HasHtml2MediaActionBase
     | Filament Setup
     |--------------------------------------------------------------------------
     */
+    public function setUp(): void
+{
+    parent::setUp();
+    $this->modalHeading(fn(): string => $this->getLabel());
+    $this->modalSubmitAction(false);
+    $this->modalContent(function () {
+        return $this->getContent();
+    });
+    if ($this->shouldOpenModal()) {
+        $this->modalFooterActions($this->getModalFooterActions());
+    }
+}
+
     // public function setUp(): void
     // {
     //     parent::setUp();
@@ -271,67 +284,121 @@ trait HasHtml2MediaActionBase
     /**
      * FIXED: Generate modal footer actions
      */
+
     public function getModalFooterActions(): array
-    {
-        $actions = [];
+{
+    $actions = [];
 
-        if ($this->isPrint()) {
-            // $actions[] = \Filament\Actions\Action::make('modal_print')
-            //     ->label('Print')
-            //     ->icon('heroicon-o-printer')
-            //     ->action(function (Action $action) {
-            //         $action->getLivewire()->dispatch(
-            //             'triggerPrint',
-            //             ...$this->getDispatchOptions('print')
-            //         );
-            //         // Close modal after dispatching
-            //         $action->getLivewire()->mountAction(null);
-            //     });
-
-            $actions[] = \Filament\Actions\Action::make('modal_print')
-    ->label('Print')
-    ->icon('heroicon-o-printer')
-    ->action(function (Action $action) {
-        $options = $this->getDispatchOptions('print');
-        $action->getLivewire()->dispatch('triggerPrint', ...$options);
-        // if (app()->hasDebugModeEnabled()) {
-            logger()->info('Print action dispatched', ['options' => $options]);
-        // }
-        $action->getLivewire()->mountAction(null); // Close modal after dispatch
-    });
-        }
-
-        if ($this->isSavePdf()) {
-            $actions[] = \Filament\Actions\Action::make('modal_save_pdf')
-                ->label('Save as PDF')
-                ->icon('heroicon-o-document-arrow-down')
-                ->action(function (Action $action) {
-                    $action->getLivewire()->dispatch(
-                        'triggerPrint',
-                        ...$this->getDispatchOptions('savePdf')
-                    );
-                    if (app()->hasDebugModeEnabled()) {
-            logger()->info('Print action dispatched', ['options' => $options]);
-        }
-                    // Close modal after dispatching
-                    $action->getLivewire()->mountAction(null);
-                });
-        }
-
-        if ($this->isPreview()) {
-            $actions[] = \Filament\Actions\Action::make('modal_preview')
-                ->label('Preview')
-                ->icon('heroicon-o-eye')
-                ->action(function (Action $action) {
-                    $action->getLivewire()->dispatch(
-                        'triggerPrint',
-                        ...$this->getDispatchOptions('preview')
-                    );
-                });
-        }
-
-        return $actions;
+    if ($this->isPrint()) {
+        $actions[] = \Filament\Actions\Action::make('modal_print')
+            ->label('Print')
+            ->icon('heroicon-o-printer')
+            ->modalHeading('Print Document')
+            ->action(function (Action $action) {
+                $options = $this->getDispatchOptions('print');
+                $action->getLivewire()->dispatch('triggerPrint', ...$options);
+                if (app()->hasDebugModeEnabled()) {
+                    logger()->info('triggerPrint dispatched from modal_print', ['options' => $options]);
+                }
+                $action->successNotification('Print triggered successfully');
+                $action->close(); // Close modal after dispatch
+            });
     }
+
+    if ($this->isSavePdf()) {
+        $actions[] = \Filament\Actions\Action::make('modal_save_pdf')
+            ->label('Save as PDF')
+            ->icon('heroicon-o-document-arrow-down')
+            ->modalHeading('Save as PDF')
+            ->action(function (Action $action) {
+                $options = $this->getDispatchOptions('savePdf');
+                $action->getLivewire()->dispatch('triggerPrint', ...$options);
+                if (app()->hasDebugModeEnabled()) {
+                    logger()->info('triggerPrint dispatched from modal_save_pdf', ['options' => $options]);
+                }
+                $action->successNotification('PDF save triggered successfully');
+                $action->close();
+            });
+    }
+
+    if ($this->isPreview()) {
+        $actions[] = \Filament\Actions\Action::make('modal_preview')
+            ->label('Preview')
+            ->icon('heroicon-o-eye')
+            ->modalHeading('Preview Document')
+            ->action(function (Action $action) {
+                $options = $this->getDispatchOptions('preview');
+                $action->getLivewire()->dispatch('triggerPrint', ...$options);
+                if (app()->hasDebugModeEnabled()) {
+                    logger()->info('triggerPrint dispatched from modal_preview', ['options' => $options]);
+                }
+                $action->successNotification('Preview triggered successfully');
+            });
+    }
+
+    return $actions;
+}
+    // public function getModalFooterActions(): array
+    // {
+    //     $actions = [];
+
+    //     if ($this->isPrint()) {
+    //         // $actions[] = \Filament\Actions\Action::make('modal_print')
+    //         //     ->label('Print')
+    //         //     ->icon('heroicon-o-printer')
+    //         //     ->action(function (Action $action) {
+    //         //         $action->getLivewire()->dispatch(
+    //         //             'triggerPrint',
+    //         //             ...$this->getDispatchOptions('print')
+    //         //         );
+    //         //         // Close modal after dispatching
+    //         //         $action->getLivewire()->mountAction(null);
+    //         //     });
+
+    //         $actions[] = \Filament\Actions\Action::make('modal_print')
+    // ->label('Print')
+    // ->icon('heroicon-o-printer')
+    // ->action(function (Action $action) {
+    //     $options = $this->getDispatchOptions('print');
+    //     $action->getLivewire()->dispatch('triggerPrint', ...$options);
+    //     // if (app()->hasDebugModeEnabled()) {
+    //         logger()->info('Print action dispatched', ['options' => $options]);
+    //     // }
+    //     $action->getLivewire()->mountAction(null); // Close modal after dispatch
+    // });
+    //     }
+
+    //     if ($this->isSavePdf()) {
+    //         $actions[] = \Filament\Actions\Action::make('modal_save_pdf')
+    //             ->label('Save as PDF')
+    //             ->icon('heroicon-o-document-arrow-down')
+    //             ->action(function (Action $action) {
+    //                 $action->getLivewire()->dispatch(
+    //                     'triggerPrint',
+    //                     ...$this->getDispatchOptions('savePdf')
+    //                 );
+    //                 if (app()->hasDebugModeEnabled()) {
+    //         logger()->info('Print action dispatched', ['options' => $options]);
+    //     }
+    //                 // Close modal after dispatching
+    //                 $action->getLivewire()->mountAction(null);
+    //             });
+    //     }
+
+    //     if ($this->isPreview()) {
+    //         $actions[] = \Filament\Actions\Action::make('modal_preview')
+    //             ->label('Preview')
+    //             ->icon('heroicon-o-eye')
+    //             ->action(function (Action $action) {
+    //                 $action->getLivewire()->dispatch(
+    //                     'triggerPrint',
+    //                     ...$this->getDispatchOptions('preview')
+    //                 );
+    //             });
+    //     }
+
+    //     return $actions;
+    // }
 
     // protected function getDispatchOptions(?string $type = null): array
     // {
