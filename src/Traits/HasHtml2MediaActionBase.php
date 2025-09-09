@@ -249,7 +249,7 @@ trait HasHtml2MediaActionBase
     /**
      * FIXED: Generate modal footer actions
      */
-    protected function getModalFooterActions(): array
+    public function getModalFooterActions(): array
     {
         $actions = [];
 
