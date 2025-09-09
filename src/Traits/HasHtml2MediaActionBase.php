@@ -257,16 +257,7 @@ trait HasHtml2MediaActionBase
             'enableLinks' => $this->isEnableLinks(),
         ]];
 
-        echo "<script>
-    console.log('Html2Media Dispatch Options:', " . json_encode($options) . ");
-    const elId = " . json_encode($options[0]['element']) . ";
-    const el = document.getElementById(elId);
-    if (el) {
-        console.log('✅ Element found in DOM:', elId, el);
-    } else {
-        console.warn('❌ Element NOT found in DOM:', elId);
-    }
-</script>";
+        logger()->info('Html2Media Dispatch Options', $options);
 
         return $options;
     }
