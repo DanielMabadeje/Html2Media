@@ -1,51 +1,49 @@
-// Fixed html2media.js
-document.addEventListener('DOMContentLoaded', function () {
-    console.log('html2media.js loaded');
+document.addEventListener('livewire:init', () => {
+    console.log('Livewire initialized for html2media.js');
     
     // Check for required libraries
     if (!window.html2pdf) {
         console.error('html2pdf library not found!');
         return;
     }
+    console.log('html2pdf library loaded:', !!window.html2pdf);
     
-    Livewire.on('triggerPrint', function (options = []) {
-        console.log('triggerPrint received:', JSON.stringify(options, null, 2));
+    Livewire.on('triggerPrint', (options = []) => {
+        console.log('triggerPrint event received:', JSON.stringify(options, null, 2));
         if (options.length > 0) {
             performAction(options[0]);
         } else {
             console.error('No options provided for triggerPrint');
         }
     });
+
+    // Debug: Log all Livewire events to catch any misnamed events
+    Livewire.onAny((event, payload) => {
+        console.log('Livewire event received:', { event, payload });
+    });
 });
 
 function performAction({ action = 'print', element, ...customOptions } = {}) {
     console.log('performAction called with:', { action, element, customOptions });
     
-    // FIXED: Use the element ID directly, don't construct it
-    const printElement = document.getElementById(element);
-    
-    console.log('Looking for element with ID:', element);
-    console.log('Element found:', printElement);
+    const tryFindElement = (retries = 3, delay = 500) => {
+        const printElement = document.getElementById(element);
+        console.log('Looking for element with ID:', element, 'Attempt:', 4 - retries);
+        if (printElement) {
+            processElement(printElement, action, customOptions);
+        } else if (retries > 0) {
+            console.warn(`Element "${element}" not found, retrying...`);
+            setTimeout(() => tryFindElement(retries - 1, delay), delay);
+        } else {
+            console.error(`Element "${element}" not found after retries.`);
+            console.log('Available elements:', Array.from(document.querySelectorAll('[id]')).map(el => el.id));
+        }
+    };
 
-    if (!printElement) {
-        console.error(`Element with ID "${element}" not found.`);
-        
-        // Debug: List all available elements
-        const allElements = document.querySelectorAll('[id]');
-        console.log('Available elements:', Array.from(allElements).map(el => el.id));
-        
-        return;
-    }
+    tryFindElement();
+}
 
-    // Create or reuse iframe for printing
-    let iframe = document.getElementById(`print-smart-iframe-${element.replace(/[^a-zA-Z0-9]/g, '')}`);
-    if (!iframe) {
-        iframe = document.createElement('iframe');
-        iframe.id = `print-smart-iframe-${element.replace(/[^a-zA-Z0-9]/g, '')}`;
-        iframe.style.display = 'none';
-        document.body.appendChild(iframe);
-    }
-
+function processElement(printElement, action, customOptions) {
     const defaultOptions = {
         filename: 'document.pdf',
         pagebreak: { mode: ['css', 'legacy'], after: 'section' },
@@ -72,14 +70,9 @@ function performAction({ action = 'print', element, ...customOptions } = {}) {
                     .from(printElement)
                     .set(options)
                     .save()
-                    .then(() => {
-                        console.log('PDF saved successfully');
-                    })
-                    .catch(error => {
-                        console.error('PDF save failed:', error);
-                    });
+                    .then(() => console.log('PDF saved successfully'))
+                    .catch(error => console.error('PDF save failed:', error));
                 break;
-                
             case 'print':
                 console.log('Starting print...');
                 html2pdf()
@@ -91,6 +84,10 @@ function performAction({ action = 'print', element, ...customOptions } = {}) {
                         console.log('PDF generated for printing');
                         const blob = pdf.output('blob');
                         const url = URL.createObjectURL(blob);
+                        const iframe = document.createElement('iframe');
+                        iframe.id = `print-smart-iframe-${element.replace(/[^a-zA-Z0-9]/g, '')}`;
+                        iframe.style.display = 'none';
+                        document.body.appendChild(iframe);
                         iframe.src = url;
                         
                         iframe.onload = function () {
@@ -105,11 +102,8 @@ function performAction({ action = 'print', element, ...customOptions } = {}) {
                             };
                         };
                     })
-                    .catch(error => {
-                        console.error('Print failed:', error);
-                    });
+                    .catch(error => console.error('Print failed:', error));
                 break;
-                
             case 'preview':
                 console.log('Starting preview...');
                 html2pdf()
@@ -118,18 +112,14 @@ function performAction({ action = 'print', element, ...customOptions } = {}) {
                     .toPdf()
                     .get('pdf')
                     .then(function (pdf) {
+                        console.log('PDF generated for preview');
                         const blob = pdf.output('blob');
                         const url = URL.createObjectURL(blob);
                         window.open(url, '_blank');
-                        
-                        // Clean up after a delay
                         setTimeout(() => URL.revokeObjectURL(url), 5000);
                     })
-                    .catch(error => {
-                        console.error('Preview failed:', error);
-                    });
+                    .catch(error => console.error('Preview failed:', error));
                 break;
-                
             default:
                 console.error('Unsupported action:', action);
         }
