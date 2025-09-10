@@ -267,20 +267,40 @@ trait HasHtml2MediaActionBase
         }
 
         if ($this->isSavePdf()) {
+            // $actions[] = \Filament\Actions\Action::make('modal_save_pdf')
+            //     ->label('Save as PDF')
+            //     ->icon('heroicon-o-document-arrow-down')
+            //     ->action(function (Action $action) {
+            //         $options = $this->getDispatchOptions('savePdf');
+            //         $action->getLivewire()->dispatch('triggerPrint', ...$options);
+                    
+            //         if (app()->hasDebugModeEnabled()) {
+            //             logger()->info('triggerPrint dispatched from modal_save_pdf', ['options' => $options]);
+            //         }
+                    
+            //         // $action->successNotification('PDF save triggered successfully');
+            //         $action->close();
+            //     });
+
             $actions[] = \Filament\Actions\Action::make('modal_save_pdf')
-                ->label('Save as PDF')
-                ->icon('heroicon-o-document-arrow-down')
-                ->action(function (Action $action) {
-                    $options = $this->getDispatchOptions('savePdf');
-                    $action->getLivewire()->dispatch('triggerPrint', ...$options);
-                    
-                    if (app()->hasDebugModeEnabled()) {
-                        logger()->info('triggerPrint dispatched from modal_save_pdf', ['options' => $options]);
-                    }
-                    
-                    // $action->successNotification('PDF save triggered successfully');
-                    $action->close();
-                });
+        ->label('Save as PDF')
+        ->icon('heroicon-o-document-arrow-down')
+        ->translateLabel()
+        ->action(function (Action $action) {
+            logger()->info('modal_save_pdf action executed', [
+                'element_id' => $this->getElementId(),
+                'record' => $action->getRecord() ? $action->getRecord()->toArray() : null,
+            ]);
+            $options = $this->getDispatchOptions('savePdf');
+            $action->getLivewire()->dispatch('triggerPrint', ...$options);
+            logger()->info('triggerPrint dispatched from modal_save_pdf', ['options' => $options]);
+            // Delay modal closing to ensure JavaScript processes the element
+            $action->getLivewire()->dispatch('close-modal', id: $action->getId())->delay(1000);
+        })
+        ->extraAttributes([
+            // Fallback: Directly dispatch triggerPrint if action closure fails
+            'wire:click' => "dispatch('triggerPrint', " . json_encode($this->getDispatchOptions('savePdf')[0]) . ")",
+        ]);
         }
 
         if ($this->isPreview()) {
