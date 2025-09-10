@@ -1,9 +1,5 @@
 composer update danielmabadeje/html2media:dev-main --with-all-dependencies
 
-public function elementId(string|Closure|null $elementId = null): static
-{
-    $this->elementId = $elementId;
-    // Reset cached value when element ID is changed
-    $this->resolvedElementId = null;
-    return $this;
-}
+php artisan cache:clear
+php artisan view:clear
+php artisan filament:assets

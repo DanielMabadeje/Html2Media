@@ -334,12 +334,12 @@ trait HasHtml2MediaActionBase
             'enableLinks' => $this->isEnableLinks(),
         ]];
         
-        if (app()->hasDebugModeEnabled()) {
+        // if (app()->hasDebugModeEnabled()) {
             logger()->info('Html2Media Dispatch Options', [
                 'full_element_id' => $elementId,
                 'options' => $options
             ]);
-        }
+        // }
         
         return $options;
     }
