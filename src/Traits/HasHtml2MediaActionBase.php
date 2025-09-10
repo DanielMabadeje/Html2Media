@@ -188,7 +188,7 @@ trait HasHtml2MediaActionBase
         );
     }
 
-    public function elementId(string|Closure $elementId = null): static
+    public function elementId(string|Closure|null $elementId = null): static
     {
         $this->elementId = $elementId;
         // Reset cached value when element ID is changed
