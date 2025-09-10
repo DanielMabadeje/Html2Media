@@ -1,34 +1,39 @@
-document.addEventListener('livewire:init', () => {
-    console.log('Livewire initialized for html2media.js');
-    
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('html2media.js loaded');
+
     // Check for required libraries
     if (!window.html2pdf) {
         console.error('html2pdf library not found!');
         return;
     }
     console.log('html2pdf library loaded:', !!window.html2pdf);
-    
-    Livewire.on('triggerPrint', (options = []) => {
-        console.log('triggerPrint event received:', JSON.stringify(options, null, 2));
-        if (options.length > 0) {
-            performAction(options[0]);
-        } else {
-            console.error('No options provided for triggerPrint');
-        }
-    });
+    console.log('jspdf available:', !!window.jsPDF);
+    console.log('html2canvas available:', !!window.html2canvas);
 
-    // Debug: Log all Livewire events to catch any misnamed events
-    Livewire.onAny((event, payload) => {
-        console.log('Livewire event received:', { event, payload });
+    // Wait for Livewire to initialize
+    document.addEventListener('livewire:init', () => {
+        console.log('Livewire initialized for html2media.js');
+
+        Livewire.on('triggerPrint', (options = []) => {
+            console.log('triggerPrint event received:', JSON.stringify(options, null, 2));
+            if (options.length > 0) {
+                performAction(options[0]);
+            } else {
+                console.error('No options provided for triggerPrint');
+            }
+        });
+
+        // Debug: Log Livewire availability
+        console.log('Livewire available:', !!window.Livewire);
     });
 });
 
 function performAction({ action = 'print', element, ...customOptions } = {}) {
     console.log('performAction called with:', { action, element, customOptions });
     
-    const tryFindElement = (retries = 3, delay = 500) => {
+    const tryFindElement = (retries = 5, delay = 500) => {
         const printElement = document.getElementById(element);
-        console.log('Looking for element with ID:', element, 'Attempt:', 4 - retries);
+        console.log('Looking for element with ID:', element, 'Attempt:', 6 - retries);
         if (printElement) {
             processElement(printElement, action, customOptions);
         } else if (retries > 0) {
@@ -48,7 +53,7 @@ function processElement(printElement, action, customOptions) {
         filename: 'document.pdf',
         pagebreak: { mode: ['css', 'legacy'], after: 'section' },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        html2canvas: { scale: 2, useCORS: true, logging: true },
+        html2canvas: { scale: 2, useCORS: true, allowTaint: true, logging: true },
         margin: 0
     };
 
