@@ -168,7 +168,7 @@ trait HasHtml2MediaActionBase
         if (!$content) {
             return null;
         }
-        
+
         if ($content instanceof Htmlable) {
             $html = $content->toHtml();
         } elseif ($content instanceof View) {
@@ -176,13 +176,13 @@ trait HasHtml2MediaActionBase
         } else {
             $html = (string) $content;
         }
-        
+
         $elementId = $this->getElementId();
-        
+
         if (app()->hasDebugModeEnabled()) {
             logger()->info('Rendering content with ID', ['element_id' => $elementId]);
         }
-        
+
         return new \Illuminate\Support\HtmlString(
             '<div id="' . e($elementId) . '" class="w-full max-w-none">' . $html . '</div>'
         );
@@ -225,13 +225,13 @@ trait HasHtml2MediaActionBase
     public function setUp(): void
     {
         parent::setUp();
-        
+
         $this->modalHeading(fn(): string => $this->getLabel());
         $this->modalSubmitAction(false);
         $this->modalContent(function () {
             return $this->getContent();
         });
-        
+
         if ($this->shouldOpenModal()) {
             $this->modalFooterActions($this->getModalFooterActions());
         }
@@ -251,38 +251,59 @@ trait HasHtml2MediaActionBase
                 ->action(function (Action $action) {
                     $options = $this->getDispatchOptions('print');
                     $action->getLivewire()->dispatch('triggerPrint', ...$options);
-                    
+
                     if (app()->hasDebugModeEnabled()) {
                         logger()->info('triggerPrint dispatched from modal_print', ['options' => $options]);
                     }
-                    
+
                     // $action->successNotification('Print triggered successfully');
                     $action->successNotification(\Filament\Notifications\Notification::make()
-                    ->title('Success')
-                    ->body('Print triggered successfully')
-                    ->success());
+                        ->title('Success')
+                        ->body('Print triggered successfully')
+                        ->success());
 
                     $action->close(); // Close modal after dispatch
                 });
         }
 
-        if ($this->isSavePdf()) {
-            // $actions[] = \Filament\Actions\Action::make('modal_save_pdf')
-            //     ->label('Save as PDF')
-            //     ->icon('heroicon-o-document-arrow-down')
-            //     ->action(function (Action $action) {
-            //         $options = $this->getDispatchOptions('savePdf');
-            //         $action->getLivewire()->dispatch('triggerPrint', ...$options);
-                    
-            //         if (app()->hasDebugModeEnabled()) {
-            //             logger()->info('triggerPrint dispatched from modal_save_pdf', ['options' => $options]);
-            //         }
-                    
-            //         // $action->successNotification('PDF save triggered successfully');
-            //         $action->close();
-            //     });
+        // if ($this->isSavePdf()) {
+        //     // $actions[] = \Filament\Actions\Action::make('modal_save_pdf')
+        //     //     ->label('Save as PDF')
+        //     //     ->icon('heroicon-o-document-arrow-down')
+        //     //     ->action(function (Action $action) {
+        //     //         $options = $this->getDispatchOptions('savePdf');
+        //     //         $action->getLivewire()->dispatch('triggerPrint', ...$options);
 
-            $actions[] = \Filament\Actions\Action::make('modal_save_pdf')
+        //     //         if (app()->hasDebugModeEnabled()) {
+        //     //             logger()->info('triggerPrint dispatched from modal_save_pdf', ['options' => $options]);
+        //     //         }
+
+        //     //         // $action->successNotification('PDF save triggered successfully');
+        //     //         $action->close();
+        //     //     });
+
+        //     $actions[] = \Filament\Actions\Action::make('modal_save_pdf')
+        //         ->label('Save as PDF')
+        //         ->icon('heroicon-o-document-arrow-down')
+        //         ->translateLabel()
+        //         ->action(function (Action $action) {
+        //             logger()->info('modal_save_pdf action executed', [
+        //                 'element_id' => $this->getElementId(),
+        //                 'record' => $action->getRecord() ? $action->getRecord()->toArray() : null,
+        //             ]);
+        //             $options = $this->getDispatchOptions('savePdf');
+        //             $action->getLivewire()->dispatch('triggerPrint', ...$options);
+        //             logger()->info('triggerPrint dispatched from modal_save_pdf', ['options' => $options]);
+        //             // Delay modal closing to ensure JavaScript processes the element
+        //             $action->getLivewire()->dispatch('close-modal', id: $action->getId())->delay(1000);
+        //         })
+        //         ->extraAttributes([
+        //             // Fallback: Directly dispatch triggerPrint if action closure fails
+        //             'wire:click' => "dispatch('triggerPrint', " . json_encode($this->getDispatchOptions('savePdf')[0]) . ")",
+        //         ]);
+        // }
+        if ($this->isSavePdf()) {
+    $actions[] = \Filament\Actions\Action::make('modal_save_pdf')
         ->label('Save as PDF')
         ->icon('heroicon-o-document-arrow-down')
         ->translateLabel()
@@ -294,14 +315,12 @@ trait HasHtml2MediaActionBase
             $options = $this->getDispatchOptions('savePdf');
             $action->getLivewire()->dispatch('triggerPrint', ...$options);
             logger()->info('triggerPrint dispatched from modal_save_pdf', ['options' => $options]);
-            // Delay modal closing to ensure JavaScript processes the element
-            $action->getLivewire()->dispatch('close-modal', id: $action->getId())->delay(1000);
+            $action->getLivewire()->dispatch('close-modal', id: $action->getId())->delay(3000);
         })
         ->extraAttributes([
-            // Fallback: Directly dispatch triggerPrint if action closure fails
             'wire:click' => "dispatch('triggerPrint', " . json_encode($this->getDispatchOptions('savePdf')[0]) . ")",
         ]);
-        }
+}
 
         if ($this->isPreview()) {
             $actions[] = \Filament\Actions\Action::make('modal_preview')
@@ -310,17 +329,18 @@ trait HasHtml2MediaActionBase
                 ->action(function (Action $action) {
                     $options = $this->getDispatchOptions('preview');
                     $action->getLivewire()->dispatch('triggerPrint', ...$options);
-                    
+
                     if (app()->hasDebugModeEnabled()) {
                         logger()->info('triggerPrint dispatched from modal_preview', ['options' => $options]);
                     }
-                    
+
                     // $action->successNotification('Preview triggered successfully');
-                    $action->successNotification(\Filament\Notifications\Notification::make()
-                    ->title('Success')
-                    ->body('Preview triggered successfully')
-                    ->success()
-                );
+                    $action->successNotification(
+                        \Filament\Notifications\Notification::make()
+                            ->title('Success')
+                            ->body('Preview triggered successfully')
+                            ->success()
+                    );
                 });
         }
 
@@ -333,7 +353,7 @@ trait HasHtml2MediaActionBase
     protected function getDispatchOptions(?string $type = null): array
     {
         $elementId = $this->getElementId(); // Full ID: print-smart-content-123
-        
+
         $options = [[
             'action' => $type ?? ($this->isSavePdf() ? 'savePdf' : ($this->isPrint() ? 'print' : null)),
             'element' => $elementId, // FIXED: Send the full element ID
@@ -353,14 +373,14 @@ trait HasHtml2MediaActionBase
             'margin' => $this->getMargin(),
             'enableLinks' => $this->isEnableLinks(),
         ]];
-        
+
         // if (app()->hasDebugModeEnabled()) {
-            logger()->info('Html2Media Dispatch Options', [
-                'full_element_id' => $elementId,
-                'options' => $options
-            ]);
+        logger()->info('Html2Media Dispatch Options', [
+            'full_element_id' => $elementId,
+            'options' => $options
+        ]);
         // }
-        
+
         return $options;
     }
 

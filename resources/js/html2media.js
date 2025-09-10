@@ -6,6 +6,14 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error('html2pdf library not found!');
         return;
     }
+    if (!window.jsPDF) {
+        console.error('jsPDF library not found!');
+        return;
+    }
+    if (!window.html2canvas) {
+        console.error('html2canvas library not found!');
+        return;
+    }
     console.log('html2pdf library loaded:', !!window.html2pdf);
     console.log('jspdf available:', !!window.jsPDF);
     console.log('html2canvas available:', !!window.html2canvas);
@@ -13,6 +21,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Wait for Livewire to initialize
     document.addEventListener('livewire:init', () => {
         console.log('Livewire initialized for html2media.js');
+
+        if (!window.Livewire) {
+            console.error('Livewire not available!');
+            return;
+        }
+        console.log('Livewire available:', !!window.Livewire);
 
         Livewire.on('triggerPrint', (options = []) => {
             console.log('triggerPrint event received:', JSON.stringify(options, null, 2));
@@ -23,8 +37,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Debug: Log Livewire availability
-        console.log('Livewire available:', !!window.Livewire);
+        // Debug: Log all Livewire events using a lower-level approach
+        window.addEventListener('livewire:dispatch', (event) => {
+            console.log('Livewire dispatch event:', event.detail);
+        });
     });
 });
 
