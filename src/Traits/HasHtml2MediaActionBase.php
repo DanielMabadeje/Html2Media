@@ -303,24 +303,25 @@ trait HasHtml2MediaActionBase
         //         ]);
         // }
         if ($this->isSavePdf()) {
-    $actions[] = \Filament\Actions\Action::make('modal_save_pdf')
-        ->label('Save as PDF')
-        ->icon('heroicon-o-document-arrow-down')
-        ->translateLabel()
-        ->action(function (Action $action) {
-            logger()->info('modal_save_pdf action executed', [
-                'element_id' => $this->getElementId(),
-                'record' => $action->getRecord() ? $action->getRecord()->toArray() : null,
-            ]);
-            $options = $this->getDispatchOptions('savePdf');
-            $action->getLivewire()->dispatch('triggerPrint', ...$options);
-            logger()->info('triggerPrint dispatched from modal_save_pdf', ['options' => $options]);
-            $action->getLivewire()->dispatch('close-modal', id: $action->getId())->delay(3000);
-        })
-        ->extraAttributes([
-            'wire:click' => "dispatch('triggerPrint', " . json_encode($this->getDispatchOptions('savePdf')[0]) . ")",
-        ]);
-}
+            $actions[] = \Filament\Actions\Action::make('modal_save_pdf')
+                ->label('Save as PDF')
+                ->icon('heroicon-o-document-arrow-down')
+                ->translateLabel()
+                ->action(fn($record, $livewire) => $livewire->dispatch('triggerPrint', ...$this->getDispatchOptions('savePdf')));
+            // ->action(function (Action $action) {
+            //     logger()->info('modal_save_pdf action executed', [
+            //         'element_id' => $this->getElementId(),
+            //         'record' => $action->getRecord() ? $action->getRecord()->toArray() : null,
+            //     ]);
+            //     $options = $this->getDispatchOptions('savePdf');
+            //     $action->getLivewire()->dispatch('triggerPrint', ...$options);
+            //     logger()->info('triggerPrint dispatched from modal_save_pdf', ['options' => $options]);
+            //     $action->getLivewire()->dispatch('close-modal', id: $action->getId())->delay(3000);
+            // })
+            // ->extraAttributes([
+            //     'wire:click' => "dispatch('triggerPrint', " . json_encode($this->getDispatchOptions('savePdf')[0]) . ")",
+            // ]);
+        }
 
         if ($this->isPreview()) {
             $actions[] = \Filament\Actions\Action::make('modal_preview')

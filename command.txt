@@ -3,3 +3,6 @@ composer update danielmabadeje/html2media:dev-main --with-all-dependencies
 php artisan cache:clear
 php artisan view:clear
 php artisan filament:assets
+
+
+performAction({ action: 'preview', element: 'print-smart-content-1'})

@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('html2media.js loaded');
+    console.log('html2media.js loaded at:', new Date().toISOString());
 
     // Check for required libraries
     if (!window.html2pdf) {
@@ -18,9 +18,22 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('jspdf available:', !!window.jsPDF);
     console.log('html2canvas available:', !!window.html2canvas);
 
+    // Register listener immediately if Livewire is available
+    if (window.Livewire) {
+        console.log('Registering immediate triggerPrint listener at:', new Date().toISOString());
+        Livewire.on('triggerPrint', (options = []) => {
+            console.log('Immediate triggerPrint event received:', JSON.stringify(options, null, 2));
+            if (options.length > 0) {
+                performAction(options[0]);
+            } else {
+                console.error('No options provided for immediate triggerPrint');
+            }
+        });
+    }
+
     // Wait for Livewire to initialize
     document.addEventListener('livewire:init', () => {
-        console.log('Livewire initialized for html2media.js');
+        console.log('Livewire initialized for html2media.js at:', new Date().toISOString());
 
         if (!window.Livewire) {
             console.error('Livewire not available!');
@@ -37,9 +50,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Debug: Log all Livewire events using a lower-level approach
+        // Debug: Log all Livewire dispatched events
         window.addEventListener('livewire:dispatch', (event) => {
-            console.log('Livewire dispatch event:', event.detail);
+            console.log('Livewire dispatch event:', JSON.stringify(event.detail, null, 2));
+        });
+
+        // Debug: Log all Livewire received events
+        window.addEventListener('livewire:dispatch-received', (event) => {
+            console.log('Livewire dispatch-received event:', JSON.stringify(event.detail, null, 2));
         });
     });
 });
